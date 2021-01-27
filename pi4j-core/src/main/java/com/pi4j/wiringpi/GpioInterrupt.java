@@ -39,14 +39,14 @@ import com.pi4j.util.NativeLibraryLoader;
 
 /**
  * <p>
- * This class provides static methods to configure the native Pi4J library to listen to GPIO
- * interrupts and invoke callbacks into this class. Additionally, this class provides a listener
- * registration allowing Java consumers to subscribe to GPIO pin state changes.
+ * This class provides static methods to configure the native Pi4J library to listen to GPIO interrupts and invoke
+ * callbacks into this class. Additionally, this class provides a listener registration allowing Java consumers to
+ * subscribe to GPIO pin state changes.
  * </p>
  *
  * <p>
- * Before using the Pi4J library, you need to ensure that the Java VM in configured with access to
- * the following system libraries:
+ * Before using the Pi4J library, you need to ensure that the Java VM in configured with access to the following system
+ * libraries:
  * <ul>
  * <li>pi4j</li>
  * <li>wiringPi</li>
@@ -56,14 +56,13 @@ import com.pi4j.util.NativeLibraryLoader;
  * </blockquote>
  * </p>
  *
+ * @author Robert Savage (<a href="http://www.savagehomeautomation.com">http://www.savagehomeautomation.com</a>)
  * @see <a href="https://pi4j.com/">https://pi4j.com/</a>
- * @author Robert Savage (<a
- *         href="http://www.savagehomeautomation.com">http://www.savagehomeautomation.com</a>)
  */
 public class GpioInterrupt {
 
-    private static final Object mutex;
-    private static final LinkedBlockingQueue<GpioEvent> events;
+	private static final Object mutex;
+	private static final LinkedBlockingQueue<GpioEvent> events;
 	private static final List<GpioInterruptListener> listeners;
 
 	private static boolean run;
@@ -71,81 +70,83 @@ public class GpioInterrupt {
 	private static Future<?> eventTask;
 
 	// private constructor
-    private GpioInterrupt()  {
-        // forbid object construction
-    }
+	private GpioInterrupt() {
+		// forbid object construction
+	}
 
-    static {
+	static {
 		mutex = new Object();
 		events = new LinkedBlockingQueue<>();
 		listeners = Collections.synchronizedList(new ArrayList<>());
 
-        // Load the platform library
-        NativeLibraryLoader.load("libpi4j");
-    }
+		// Load the platform library
+		NativeLibraryLoader.load("libpi4j");
+	}
 
-    /**
-     * <p>
-     * This method is used to instruct the native code to setup a monitoring thread to monitor
-     * interrupts that represent changes to the selected GPIO pin.
-     * </p>
-     *
-     * <p>
-     * <b>The GPIO pin must first be exported before it can be monitored.</b>
-     * </p>
-     *
-     * @param pin GPIO pin number (not header pin number; not wiringPi pin number)
-     * @return A return value of a negative number represents an error. A return value of '0'
-     *         represents success and that the GPIO pin is already being monitored. A return value
-     *         of '1' represents success and that a new monitoring thread was created to handle the
-     *         requested GPIO pin number.
-     */
-    public static native int enablePinStateChangeCallback(int pin);
+	/**
+	 * <p>
+	 * This method is used to instruct the native code to setup a monitoring thread to monitor interrupts that represent
+	 * changes to the selected GPIO pin.
+	 * </p>
+	 *
+	 * <p>
+	 * <b>The GPIO pin must first be exported before it can be monitored.</b>
+	 * </p>
+	 *
+	 * @param pin
+	 * 		GPIO pin number (not header pin number; not wiringPi pin number)
+	 *
+	 * @return A return value of a negative number represents an error. A return value of '0' represents success and
+	 * that the GPIO pin is already being monitored. A return value of '1' represents success and that a new monitoring
+	 * thread was created to handle the requested GPIO pin number.
+	 */
+	public static native int enablePinStateChangeCallback(int pin);
 
-    /**
-     * <p>
-     * This method is used to instruct the native code to stop the monitoring thread monitoring
-     * interrupts on the selected GPIO pin.
-     * </p>
-     *
-     * @param pin GPIO pin number (not header pin number; not wiringPi pin number)
+	/**
+	 * <p>
+	 * This method is used to instruct the native code to stop the monitoring thread monitoring interrupts on the
+	 * selected GPIO pin.
+	 * </p>
+	 *
+	 * @param pin
+	 * 		GPIO pin number (not header pin number; not wiringPi pin number)
+	 *
+	 * @return A return value of a negative number represents an error. A return value of '0' represents success and
+	 * that no existing monitor was previously running. A return value of '1' represents success and that an existing
+	 * monitoring thread was stopped for the requested GPIO pin number.
+	 */
+	public static native int disablePinStateChangeCallback(int pin);
 
-     * @return A return value of a negative number represents an error. A return value of '0'
-     *         represents success and that no existing monitor was previously running. A return
-     *         value of '1' represents success and that an existing monitoring thread was stopped
-     *         for the requested GPIO pin number.
-     */
-    public static native int disablePinStateChangeCallback(int pin);
-
-    /**
-     * <p>
-     * This method is provided as the callback handler for the Pi4J native library to invoke when a
-     * GPIO interrupt is detected. This method should not be called from any Java consumers. (Thus
-     * is is marked as a private method.)
-     * </p>
-     *
-     * @param pin GPIO pin number (not header pin number; not wiringPi pin number)
-     * @param state New GPIO pin state.
-     */
-    private static void pinStateChangeCallback(int pin, boolean state) {
+	/**
+	 * <p>
+	 * This method is provided as the callback handler for the Pi4J native library to invoke when a GPIO interrupt is
+	 * detected. This method should not be called from any Java consumers. (Thus is is marked as a private method.)
+	 * </p>
+	 *
+	 * @param pin
+	 * 		GPIO pin number (not header pin number; not wiringPi pin number)
+	 * @param state
+	 * 		New GPIO pin state.
+	 */
+	private static void pinStateChangeCallback(int pin, boolean state) {
 		synchronized (mutex) {
 			events.add(new GpioEvent(pin, state));
 		}
-    }
+	}
 
-    /**
-     * <p>
-     * Java consumer code can call this method to register itself as a listener for pin state
-     * changes.
-     * </p>
-     *
-     * @see com.pi4j.wiringpi.GpioInterruptListener
-     * @see com.pi4j.wiringpi.GpioInterruptEvent
-     *
-     * @param listener A class instance that implements the GpioInterruptListener interface.
-     */
-    public static void addListener(GpioInterruptListener listener) {
-    	synchronized (mutex) {
+	/**
+	 * <p>
+	 * Java consumer code can call this method to register itself as a listener for pin state changes.
+	 * </p>
+	 *
+	 * @param listener
+	 * 		A class instance that implements the GpioInterruptListener interface.
+	 *
+	 * @see com.pi4j.wiringpi.GpioInterruptListener
+	 * @see com.pi4j.wiringpi.GpioInterruptEvent
+	 */
+	public static void addListener(GpioInterruptListener listener) {
+		synchronized (mutex) {
 			if (!listeners.contains(listener)) {
 				listeners.add(listener);
 
@@ -153,43 +154,44 @@ public class GpioInterrupt {
 					enableEventExecutor();
 			}
 		}
-    }
+	}
 
 	/**
-     * <p>
-     * Java consumer code can all this method to unregister itself as a listener for pin state
-     * changes.
-     * </p>
-     *
-     * @see com.pi4j.wiringpi.GpioInterruptListener
-     * @see com.pi4j.wiringpi.GpioInterruptEvent
-     *
-     * @param listener A class instance that implements the GpioInterruptListener interface.
-     */
-    public static void removeListener(GpioInterruptListener listener) {
+	 * <p>
+	 * Java consumer code can all this method to unregister itself as a listener for pin state changes.
+	 * </p>
+	 *
+	 * @param listener
+	 * 		A class instance that implements the GpioInterruptListener interface.
+	 *
+	 * @see com.pi4j.wiringpi.GpioInterruptListener
+	 * @see com.pi4j.wiringpi.GpioInterruptEvent
+	 */
+	public static void removeListener(GpioInterruptListener listener) {
 		synchronized (mutex) {
 			listeners.remove(listener);
 
 			if (run && listeners.isEmpty())
 				disableEventExecutor();
 		}
-    }
+	}
 
 	/**
-     * <p>
-     * Returns true if the listener is already registered for event callbacks.
-     * </p>
-     *
-     * @see com.pi4j.wiringpi.GpioInterruptListener
-     * @see com.pi4j.wiringpi.GpioInterruptEvent
-     *
-     * @param listener A class instance that implements the GpioInterruptListener interface.
-     */
-    public static boolean hasListener(GpioInterruptListener listener) {
+	 * <p>
+	 * Returns true if the listener is already registered for event callbacks.
+	 * </p>
+	 *
+	 * @param listener
+	 * 		A class instance that implements the GpioInterruptListener interface.
+	 *
+	 * @see com.pi4j.wiringpi.GpioInterruptListener
+	 * @see com.pi4j.wiringpi.GpioInterruptEvent
+	 */
+	public static boolean hasListener(GpioInterruptListener listener) {
 		synchronized (mutex) {
 			return listeners.contains(listener);
 		}
-    }
+	}
 
 	private static synchronized void enableEventExecutor() {
 		if (!run) {
@@ -208,9 +210,13 @@ public class GpioInterrupt {
 		}
 	}
 
+	public static void shutdown() {
+		disableEventExecutor();
+	}
+
 	private static void handleEvents() {
-		try {
-			while(run) {
+		while (run) {
+			try {
 				GpioEvent event = events.take();
 
 				List<GpioInterruptListener> listenersClone;
@@ -222,19 +228,21 @@ public class GpioInterrupt {
 					GpioInterruptEvent interruptEvent = new GpioInterruptEvent(listener, event.pin, event.state);
 					listener.pinStateChange(interruptEvent);
 				}
+			} catch (InterruptedException e) {
+				if (!run) {
+					return;
+				}
 			}
-		} catch (InterruptedException e) {
-			System.err.println("GpioInterrupt.handleEvents(): Interrupted while waiting for new events!");
 		}
 	}
 
-    public static class GpioEvent {
-        private final int pin;
-        private final boolean state;
+	public static class GpioEvent {
+		private final int pin;
+		private final boolean state;
 
-        public GpioEvent(int pin, boolean state) {
-            this.pin = pin;
-            this.state = state;
-        }
-    }
+		public GpioEvent(int pin, boolean state) {
+			this.pin = pin;
+			this.state = state;
+		}
+	}
 }
